@@ -74,4 +74,3 @@ class SeasonEpisode():
     manifest = ''
     title = ''
     thumb = ''
-    videoInfo = {}

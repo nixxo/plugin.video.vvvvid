@@ -49,7 +49,10 @@ def getParams():
 
 def parameters(p):
     for k, v in list(p.items()):
-        p[k] = v
+        if v:
+            p[k] = v
+        else:
+            p.pop(k, None)
     return sys.argv[0] + '?' + urlencode(p)
 
 
@@ -161,3 +164,5 @@ def endScript(message=None, loglevel=2, closedir=True, exit=True):
 
 
 log('Starting with path "%s"' % sys.argv[0], 1)
+log('"%s"' % sys.argv[1], 1)
+log('"%s"' % sys.argv[2], 1)

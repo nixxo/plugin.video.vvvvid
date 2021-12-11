@@ -18,9 +18,25 @@ msgid "General"
 msgstr "Generale"
 
 msgctxt "#32011"
-msgid "username"
+msgid "Username"
 msgstr "Email"
 
 msgctxt "#32012"
-msgid "password"
+msgid "Password"
 msgstr "Password"
+
+msgctxt "#33001"
+msgid "Movies"
+msgstr "Film"
+
+msgctxt "#33002"
+msgid "Anime"
+msgstr "Anime"
+
+msgctxt "#33003"
+msgid "Shows"
+msgstr "Show TV"
+
+msgctxt "#33004"
+msgid "Series"
+msgstr "Serie TV"

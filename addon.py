@@ -1,5 +1,6 @@
 import sys
 from resources.lib.vvvvid import *
+from resources.lib.test import main
 from resources.lib.main import runPlugin
 from resources.lib import addonutils
 import xbmcgui
@@ -33,7 +34,7 @@ def get_credentials():
 
 
 if __name__ == "__main__":
-    import web_pdb
+    #import web_pdb
     credentials = get_credentials()
     if not credentials:
         xbmcgui.Dialog().ok(
@@ -46,6 +47,5 @@ if __name__ == "__main__":
         sys.exit(0)
 
     manageLogin(credentials)
-
-    addonutils.setContent("files")
-    runPlugin()
+    main()
+    #runPlugin()

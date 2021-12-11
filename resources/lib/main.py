@@ -1,23 +1,20 @@
 import urllib.parse as parse
-import sys
 from resources.lib.vvvvid import *
 from resources.lib import addonutils
-import xbmcplugin
 import routing as routing_plugin
 import web_pdb
 
-__url__ = sys.argv[0]
-__handle__ = int(sys.argv[1])
 routing = routing_plugin.Plugin()
 
 
 def add_items(items, isFolder=False):
-    web_pdb.set_trace()
+    #web_pdb.set_trace()
     for item in items:
         label = None
         label2 = None
         thumb = None
         path = None
+        params = None
         isPlayable = False
 
         for property, value in item.items():
@@ -31,6 +28,8 @@ def add_items(items, isFolder=False):
                 path = value
             elif property == "is_playable":
                 isPlayable = value
+            elif property == "params":
+                params = value
             else:
                 # TODO: properties
                 pass
@@ -39,11 +38,11 @@ def add_items(items, isFolder=False):
             label=label,
             label2=label2,
             path=path,
-            params=path,
+            params=params or path,
             thumb=thumb,
             isFolder=not isPlayable)
 
-    xbmcplugin.endOfDirectory(__handle__)
+    addonutils.endScript(exit=False)
 
 
 @routing.route("/")
@@ -104,9 +103,11 @@ def showMovieChannels():
 @routing.route("/movie/channel/<idChannel>/category/<category>")
 @routing.route("/movie/channel/<idChannel>/extra/<extra>")
 @routing.route("/movie/channel/<idChannel>")
-def showMovieSingleChannel(idChannel, filter="", category="", extra=""):
+def showMovieSingleChannel(idChannel, filter_id="", category="", extra=""):
+    web_pdb.set_trace()
+    params = addonutils.getParams()
     channelsElements = get_elements_from_channel(
-        idChannel, MODE_MOVIES, filter, category, extra
+        idChannel, MODE_MOVIES, params.get('filter_id'), params.get('category'), params.get('extra')
     )
     items = []
     for element in channelsElements:
@@ -127,13 +128,13 @@ def showMovieChannelFilters(idChannel):
     channels = get_section_channels(MODE_MOVIES)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for filter in channel.filterList:
                 item = dict()
                 item["label"] = str(filter)
                 item["is_playable"] = False
                 item["path"] = routing.url_for(
-                    showMovieSingleChannel, idChannel=channel.id, filter=str(filter)
+                    showMovieSingleChannel, idChannel=channel.id, filter_id=str(filter), category='ciao'
                 )
                 items.append(item)
 
@@ -146,7 +147,7 @@ def showMovieChannelCategories(idChannel):
     channels = get_section_channels(MODE_MOVIES)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for category in channel.categoryList:
                 item = dict()
                 item["label"] = str(category.name)
@@ -167,7 +168,7 @@ def showMovieChannelExtras(idChannel):
     channels = get_section_channels(MODE_MOVIES)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for extra in channel.extraList:
                 item = dict()
                 item["label"] = str(extra.name)
@@ -195,7 +196,7 @@ def showSingleMovieItem(idItem):
             items.append(item)
     else:
         episodes = itemPlayable.seasons[0].episodes
-        xbmcplugin.setContent(__handle__, "movies")
+        addonutils.setContent("movies")
         for episode in episodes:
             item = dict()
             item["label"] = episode.title
@@ -223,7 +224,7 @@ def showSingleMovieItem(idItem):
 def showSingleMovieItemSeason(seasonId, idItem):
     items = []
     itemPlayable = get_item_playable(idItem)
-    xbmcplugin.setContent(__handle__, "movies")
+    addonutils.setContent("movies")
     for season in itemPlayable.seasons:
         if season.season_id == seasonId:
             for episode in season.episodes:
@@ -287,13 +288,15 @@ def showTvChannels():
     add_items(items)
 
 
-@routing.route("/tv/channel/<idChannel>/filter/<filter>")
-@routing.route("/tv/channel/<idChannel>/category/<category>")
-@routing.route("/tv/channel/<idChannel>/extra/<extra>")
+@routing.route("/tv/channel/<idChannel>/filter/<filter_id>")
+@routing.route("/tv/channel/<idChannel>/category/<category_id>")
+@routing.route("/tv/channel/<idChannel>/extra/<extra_id>")
 @routing.route("/tv/channel/<idChannel>")
-def showTvSingleChannel(idChannel, filter="", category="", extra=""):
+def showTvSingleChannel(idChannel, filter_id="", category_id="", extra_id=""):
+    web_pdb.set_trace()
+    params = addonutils.getParams()
     channelsElements = get_elements_from_channel(
-        idChannel, MODE_SHOWS, filter, category, extra
+        idChannel, MODE_SHOWS, params.get('filter_id'), params.get('category'), params.get('extra')
     )
     items = []
     for element in channelsElements:
@@ -320,7 +323,7 @@ def showTvChannelFilters(idChannel):
                 item["label"] = str(filter)
                 item["is_playable"] = False
                 item["path"] = routing.url_for(
-                    showTvSingleChannel, idChannel=channel.id, filter=str(filter)
+                    showTvSingleChannel, idChannel=channel.id, filter_id=str(filter)
                 )
                 items.append(item)
 
@@ -380,7 +383,7 @@ def showSingleTvItem(idItem):
             items.append(item)
     else:
         episodes = itemPlayable.seasons[0].episodes
-        xbmcplugin.setContent(__handle__, "tvshows")
+        addonutils.setContent("tvshows")
         for episode in episodes:
             item = dict()
             item["label"] = episode.title
@@ -408,7 +411,7 @@ def showSingleTvItem(idItem):
 def showSingleTvItemSeason(seasonId, idItem):
     items = []
     itemPlayable = get_item_playable(idItem)
-    xbmcplugin.setContent(__handle__, "tvshows")
+    addonutils.setContent("tvshows")
     for season in itemPlayable.seasons:
         if season.season_id == seasonId:
             for episode in season.episodes:
@@ -474,8 +477,10 @@ def showAnimeChannels():
 @routing.route("/anime/channel/<idChannel>/extra/<extra>")
 @routing.route("/anime/channel/<idChannel>")
 def showAnimeSingleChannel(idChannel, filter="", category="", extra=""):
+    web_pdb.set_trace()
+    params = addonutils.getParams()
     channelsElements = get_elements_from_channel(
-        idChannel, MODE_ANIME, filter, category, extra
+        idChannel, MODE_ANIME, params.get('filter_id'), params.get('category'), params.get('extra')
     )
     items = []
     for element in channelsElements:
@@ -492,17 +497,18 @@ def showAnimeSingleChannel(idChannel, filter="", category="", extra=""):
 
 @routing.route("/anime/channel/<idChannel>/filters")
 def showAnimeChannelFilters(idChannel):
+    web_pdb.set_trace()
     items = []
     channels = get_section_channels(MODE_ANIME)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for filter in channel.filterList:
                 item = dict()
                 item["label"] = str(filter)
                 item["is_playable"] = False
                 item["path"] = routing.url_for(
-                    showAnimeSingleChannel, idChannel=channel.id, filter=str(filter)
+                    showAnimeSingleChannel, [channel.id, str(filter)]
                 )
                 items.append(item)
 
@@ -515,7 +521,7 @@ def showAnimeChannelCategories(idChannel):
     channels = get_section_channels(MODE_ANIME)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for category in channel.categoryList:
                 item = dict()
                 item["label"] = str(category.name)
@@ -523,7 +529,7 @@ def showAnimeChannelCategories(idChannel):
                 item["path"] = routing.url_for(
                     showAnimeSingleChannel,
                     idChannel=channel.id,
-                    category=str(category.id),
+                    category_id=str(category.id),
                 )
                 items.append(item)
 
@@ -536,13 +542,13 @@ def showAnimeChannelExtras(idChannel):
     channels = get_section_channels(MODE_ANIME)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for extra in channel.extraList:
                 item = dict()
                 item["label"] = str(extra.name)
                 item["is_playable"] = False
                 item["path"] = routing.url_for(
-                    showAnimeSingleChannel, idChannel=extra.id, extra=str(extra.id)
+                    showAnimeSingleChannel, idChannel=extra.id, extra_id=str(extra.id)
                 )
                 items.append(item)
 
@@ -569,7 +575,7 @@ def showSingleAnimeItem(idItem):
             items.append(item)
     else:
         episodes = itemPlayable.seasons[0].episodes
-        xbmcplugin.setContent(__handle__, "tvshows")
+        addonutils.setContent("tvshows")
         for episode in episodes:
             item = dict()
             item["label"] = episode.title
@@ -598,7 +604,7 @@ def showSingleAnimeItemSeason(seasonId, idItem):
     items = []
     itemPlayable = get_item_playable(idItem)
     #web_pdb.set_trace()
-    xbmcplugin.setContent(__handle__, "tvshows")
+    addonutils.setContent("tvshows")
     for season in itemPlayable.seasons:
         if str(season.season_id) == str(seasonId):
             for episode in season.episodes:
@@ -668,9 +674,9 @@ def showSeriesChannels():
 @routing.route("/series/channel/<idChannel>/category/<category>")
 @routing.route("/series/channel/<idChannel>/extra/<extra>")
 @routing.route("/series/channel/<idChannel>")
-def showSeriesSingleChannel(idChannel, filter="", category="", extra=""):
+def showSeriesSingleChannel(idChannel, filter_id="", category="", extra=""):
     channelsElements = get_elements_from_channel(
-        idChannel, MODE_SERIES, filter, category, extra
+        idChannel, MODE_SERIES, filter_id, category, extra
     )
     items = []
     for element in channelsElements:
@@ -691,13 +697,13 @@ def showSeriesChannelFilters(idChannel):
     channels = get_section_channels(MODE_SHOWS)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for filter in channel.filterList:
                 item = dict()
                 item["label"] = str(filter)
                 item["is_playable"] = False
                 item["path"] = routing.url_for(
-                    showSeriesSingleChannel, idChannel=channel.id, filter=str(filter)
+                    showSeriesSingleChannel, idChannel=channel.id, filter_id=str(filter)
                 )
                 items.append(item)
 
@@ -710,7 +716,7 @@ def showSeriesChannelCategories(idChannel):
     channels = get_section_channels(MODE_SHOWS)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for category in channel.categoryList:
                 item = dict()
                 item["label"] = str(category.name)
@@ -731,7 +737,7 @@ def showSeriesChannelExtras(idChannel):
     channels = get_section_channels(MODE_SHOWS)
     currentGlobalChannels = channels
     for channel in currentGlobalChannels:
-        if channel.id == idChannel:
+        if str(channel.id) == str(idChannel):
             for extra in channel.extraList:
                 item = dict()
                 item["label"] = str(extra.name)
@@ -759,7 +765,7 @@ def showSingleSeriesItem(idItem):
             items.append(item)
     else:
         episodes = itemPlayable.seasons[0].episodes
-        xbmcplugin.setContent(__handle__, "series")
+        addonutils.setContent("series")
         for episode in episodes:
             item = dict()
             item["label"] = episode.title
@@ -787,9 +793,9 @@ def showSingleSeriesItem(idItem):
 def showSingleSeriesItemSeason(seasonId, idItem):
     items = []
     itemPlayable = get_item_playable(idItem)
-    xbmcplugin.setContent(__handle__, "series")
+    addonutils.setContent("series")
     for season in itemPlayable.seasons:
-        if season.season_id == seasonId:
+        if str(season.season_id) == str(seasonId):
             for episode in season.episodes:
                 item = dict()
                 item["label"] = episode.title

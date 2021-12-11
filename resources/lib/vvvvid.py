@@ -105,23 +105,32 @@ def get_section_channels(modeType):
         listChannels.append(channel)
     return listChannels
 
-def get_elements_from_channel(idChannel,type,idFilter = '',idCategory = '',idExtra = ''):
+def get_elements_from_channel(idChannel, type, idFilter='', idCategory='', idExtra=''):
+    web_pdb.set_trace()
     middlePath = getSingleChannelPath(type)
     urlPostFix = '/last/'
-    if(idFilter != ''):
+    if(idFilter):
         urlPostFix += '?filter=' + idFilter
-    elif(idCategory != ''):
+    elif(idCategory):
         urlPostFix += '?category=' + idCategory
-    elif(idExtra != ''):
-        urlPostFix +='?extras=' + idExtra
-    urlToLoad = VVVVID_BASE_URL+middlePath + str(idChannel) + urlPostFix
+    elif(idExtra):
+        urlPostFix += '?extras=' + idExtra
+    urlToLoad = VVVVID_BASE_URL + middlePath + str(idChannel) + urlPostFix
     response = getJsonDataFromUrl(urlToLoad)
     elements = response.get('data') or []
     listElements = []
     for elementData in elements:
-        elementChannel = ElementChannel(elementData['id'],elementData['show_id'],elementData['title'],elementData['thumbnail'],elementData['ondemand_type'],elementData['show_type'])
+        elementChannel = ElementChannel(
+            elementData['id'],
+            elementData['show_id'],
+            elementData['title'],
+            elementData['thumbnail'],
+            elementData['ondemand_type'],
+            elementData['show_type']
+        )
         listElements.append(elementChannel)
     return listElements
+
 
 def get_item_playable(idItem):
     urlToLoad = VVVVID_BASE_URL + idItem + '/info'
@@ -208,7 +217,7 @@ def manageLogin(credentials):
     data_storage = Storage()
     cookie = data_storage.get('cookie')
 
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.82 Safari/537.36'}
+    headers = {'User-Agent': HTTP_HEADERS}
     if cookie:
         headers.update({'Cookie': cookie})
     
