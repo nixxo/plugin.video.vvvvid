@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import pickle
 import sys
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
@@ -81,7 +82,7 @@ def setSetting(setting, value):
     ADDON.setSetting(id=setting, value=str(value))
 
 
-def showOkDialog(heading, line):
+def showOkDialog(line, heading=NAME):
     xbmcgui.Dialog().ok(heading, line)
 
 
@@ -163,6 +164,23 @@ def endScript(message=None, loglevel=2, closedir=True, exit=True):
         sys.exit()
 
 
-log('Starting with path "%s"' % sys.argv[0], 1)
-log('"%s"' % sys.argv[1], 1)
-log('"%s"' % sys.argv[2], 1)
+class Storage:
+    FILENAME = os.path.join(DATA_PATH_T, 'storage.pkl')
+
+    def __init__(self):
+        if os.path.exists(Storage.FILENAME):
+            self.data = pickle.load(open(Storage.FILENAME, "rb"))
+            if not self.data:
+                self.data = {}
+        else:
+            self.data = {}
+
+    def get(self, id):
+        return self.data.get(id)
+
+    def set(self, id, value):
+        self.data[id] = value
+        pickle.dump(self.data, open(Storage.FILENAME, "wb"))
+
+
+log('Starting with command "%s"' % sys.argv[2], 1)

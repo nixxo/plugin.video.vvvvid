@@ -1,26 +1,102 @@
-# Kodi Media Center language file
-# Addon Name: VVVID.it
 # Addon id: plugin.video.vvvvid
-# Addon version: 1.0.4
-# Addon Provider: 
 msgid ""
 msgstr ""
-"Project-Id-Version: XBMC-Addons\n"
-"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: it\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 3.0\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: en\n"
 
-msgctxt "#32001"
+msgctxt "#30001"
 msgid "General"
-msgstr "General"
+msgstr ""
 
-msgctxt "#32011"
-msgid "username"
-msgstr "Email"
+msgctxt "#31001"
+msgid "User settings"
+msgstr ""
 
-msgctxt "#32012"
-msgid "password"
-msgstr "Password"
+msgctxt "#31002"
+msgid "Username"
+msgstr ""
+
+msgctxt "#31003"
+msgid "Save password"
+msgstr ""
+
+msgctxt "#31004"
+msgid "Password"
+msgstr ""
+
+msgctxt "#31011"
+msgid "Playback settings"
+msgstr ""
+
+msgctxt "#31012"
+msgid "Use InputStream Adaptive"
+msgstr ""
+
+msgctxt "#31021"
+msgid "Playback settings"
+msgstr ""
+
+msgctxt "#31022"
+msgid "Enable developer mode"
+msgstr ""
+
+msgctxt "#33001"
+msgid "Anime"
+msgstr ""
+
+msgctxt "#33002"
+msgid "Movies"
+msgstr ""
+
+msgctxt "#33003"
+msgid "Shows"
+msgstr ""
+
+msgctxt "#33004"
+msgid "Series"
+msgstr ""
+
+msgctxt "#40001"
+msgid "Enter email address:"
+msgstr ""
+
+msgctxt "#40002"
+msgid "Enter password:"
+msgstr ""
+
+msgctxt "#40003"
+msgid "Wrong or missing credentials."
+msgstr ""
+
+msgctxt "#40004"
+msgid "Impossible to login"
+msgstr ""
+
+msgctxt "#41002"
+msgid "Email user for the account."
+msgstr ""
+
+msgctxt "#41003"
+msgid "The password will be asked every time the login session experes, or you can store the password."
+msgstr ""
+
+msgctxt "#41004"
+msgid "Account password. WARNING: The password is stored in clear text."
+msgstr ""
+
+msgctxt "#41012"
+msgid "Use InputStream Adaptive to play the m3u8 manifest of the video."
+msgstr ""
+
+msgctxt "#41022"
+msgid "Enable verbose log messages. Useful to troubleshoot problems."
+msgstr ""

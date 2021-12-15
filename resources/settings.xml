@@ -1,7 +1,52 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="32001">
-        <setting label="32011" type="text" id="username" default=""/>
-        <setting label="32012" type="text" id="password" option="hidden" enable="!eq(-1,)" default=""/>
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="plugin.video.vvvvid">
+		<category id="general" label="30001" help="">
+			<group id="user" label="31001">
+                <setting id="username" type="string" label="31002" help="41002">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>31002</heading>
+                    </control>
+                </setting>
+                <setting id="save_password" type="boolean" label="31003" help="41003">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="password" type="string" label="31004" help="41004">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>31004</heading>
+                        <hidden>true</hidden>
+                    </control>
+                    <dependencies>
+                        <dependency type="enable" setting="SavePassword">true</dependency>
+                    </dependencies>
+                </setting>
+			</group>
+			<group id="playback" label="31011">
+                <setting id="use_inputstream" type="boolean" label="31012" help="41012">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+			</group>
+			<group id="debug" label="31021">
+                <setting id="dev_mode" type="boolean" label="31022" help="41022">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+			</group>
+		</category>
+	</section>
 </settings>
