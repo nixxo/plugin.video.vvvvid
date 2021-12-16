@@ -29,7 +29,7 @@
                         <hidden>true</hidden>
                     </control>
                     <dependencies>
-                        <dependency type="enable" setting="SavePassword">true</dependency>
+                        <dependency type="enable" setting="save_password">true</dependency>
                     </dependencies>
                 </setting>
 			</group>

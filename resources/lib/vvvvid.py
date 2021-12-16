@@ -2,7 +2,6 @@ import re
 import requests
 
 from resources.lib import addonutils
-
 import web_pdb
 
 
@@ -24,7 +23,8 @@ SHOW_SINGLE_ELEMENT_CHANNEL_PATH = 'show/'
 MOVIE_SINGLE_ELEMENT_CHANNEL_PATH = 'film/'
 SERIES_SINGLE_ELEMENT_CHANNEL_PATH = 'series/'
 
-HTTP_HEADERS = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.82 Safari/537.36'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.82 Safari/537.36'
+USER_AGENT_UE = 'Mozilla%2F5.0%20%28Windows%20NT%2010.0%3B%20WOW64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F52.0.2743.82%20Safari%2F537.36'
 
 # plugin modes
 MODE_MOVIES = '10'
@@ -38,6 +38,8 @@ KENC_TYPE = 'video/kenc'
 ENC_TYPE = 'video/enc'
 VVVVID_TYPE = 'video/vvvvid'
 
+DEVMODE = addonutils.getSettingAsBool('dev_mode')
+
 T_MAP = {
     'menu.anime': 33001,
     'menu.movies': 33002,
@@ -49,13 +51,15 @@ T_MAP = {
     'login.error': 40004,
 }
 
+# INFO SERIE
+# https://www.vvvvid.it/vvvvid/ondemand/1420/info/
 
 class Vvvvid:
     def __init__(self):
         data_storage = addonutils.Storage()
         cookie = data_storage.get('cookie')
 
-        headers = {'User-Agent': HTTP_HEADERS}
+        headers = {'User-Agent': USER_AGENT}
         if cookie:
             headers.update({'Cookie': cookie})
 
@@ -63,8 +67,10 @@ class Vvvvid:
 
         data = response.json()
         if data['result'] != 'ok':
+            self.log('__init__, starting login.', 1)
             credentials = self.getCredentials()
             if not credentials:
+                self.log('__init__, no credentials provided.', 2)
                 addonutils.showOkDialog(
                     line=addonutils.LANGUAGE(T_MAP['no.credentials']))
                 addonutils.endScript()
@@ -83,27 +89,40 @@ class Vvvvid:
 
             data = response.json()
             if data['result'] != 'first' and data['result'] != 'ok':
+                self.log('__init__, login failed,', 3)
                 addonutils.showOkDialog(
                     line=addonutils.LANGUAGE(T_MAP['login.error']))
                 addonutils.endScript()
+            self.log('__init__, login successfull,', 1)
             data_storage.set('conn_id', data['data']['conn_id'])
             data_storage.set('cookie', response.headers['set-cookie'])
         else:
+            self.log('__init__, logged in.')
             data_storage.set('conn_id', data['data']['conn_id'])
+
+    def log(self, msg, level=0):
+        if DEVMODE:
+            addonutils.log(msg, 1 if level == 0 else level)
+        elif level >= 3:
+            addonutils.log(msg, level)
 
     def getCredentials(self):
         import xbmcgui
         username = addonutils.getSetting('username')
         if not username:
+            self.log('getCredentials, requesting username.')
             username = xbmcgui.Dialog().input(addonutils.LANGUAGE(T_MAP['input.email']))
+            self.log('getCredentials, saving username.')
             addonutils.setSetting('username', username)
 
         password = addonutils.getSetting('password')
         if not password:
+            self.log('getCredentials, requesting password.')
             password = xbmcgui.Dialog().input(
                 addonutils.LANGUAGE(T_MAP['input.password']),
                 option=xbmcgui.ALPHANUM_HIDE_INPUT)
             if addonutils.getSettingAsBool('save_password'):
+                self.log('getCredentials, saving password.')
                 addonutils.setSetting('password', password)
 
         if not username or not password:
@@ -111,8 +130,12 @@ class Vvvvid:
 
         return {'username': username, 'password': password}
 
+    def createArt(self, thumb):
+        return {
+            'thumb': thumb + '|User-Agent=' + USER_AGENT_UE
+        }
+
     def getMainMenu(self):
-        # web_pdb.set_trace()
         return [
             {
                 'label': addonutils.LANGUAGE(T_MAP['menu.anime']),
@@ -155,16 +178,17 @@ class Vvvvid:
             return SERIES_SINGLE_CHANNEL_PATH if single else SERIES_CHANNELS_PATH
 
     def getChannelsSection(self, mode_type, submode=None, channel_id=None):
-        # web_pdb.set_trace()
-        channel_url = VVVVID_BASE_URL + self.getChannelsPath(mode_type)
-        response = self.getJsonDataFromUrl(channel_url)
+        url = VVVVID_BASE_URL + self.getChannelsPath(mode_type)
+        self.log('getChannelsSection, url="%s"' % url)
+        response = self.getJsonDataFromUrl(url)
         for channel_data in response or []:
             if submode and channel_id:
                 if str(channel_data['id']) == channel_id:
                     if submode in channel_data:
-                        # web_pdb.set_trace()
                         for data in channel_data[submode]:
                             label, id = (data, data) if isinstance(data, str) else (data.get('name'), data.get('id'))
+                            self.log('getChannelsSection, yield "%s/%s/%s/%s/%s"' % (
+                                label, mode_type, channel_id, submode, id))
                             yield {
                                 'label': label,
                                 'params': {
@@ -175,11 +199,14 @@ class Vvvvid:
                                 },
                             }
             elif channel_id:
+                self.log('getChannelsSection, getting elements for "%s"' % channel_id, 1)
                 yield from self.getElementsFromChannel(channel_id, mode_type)
                 break
             else:
                 sub = [x for x in ['filter', 'category', 'extras'] if x in channel_data]
                 sub = sub[0] if sub else None
+                self.log('getChannelsSection, yield "%s/%s/%s/%s"' % (
+                    channel_data['name'], mode_type, channel_data['id'], sub))
                 yield {
                     'label': channel_data['name'],
                     'params': {
@@ -190,28 +217,28 @@ class Vvvvid:
                     }
                 }
 
-    def getElementsFromChannel(self, channel_id, type, filter_id=None, category_id=None, extras_id=None):
-        # web_pdb.set_trace()
+    def getElementsFromChannel(self, channel_id, type,
+            filter_id=None, category_id=None, extras_id=None):
         path = self.getChannelsPath(type, single=True)
         params = {
             'filter': filter_id,
             'category': category_id,
             'extras': extras_id
         }
-        urlToLoad = VVVVID_ELEMENTS_URL.format(path=path, item=channel_id)
+        url = VVVVID_ELEMENTS_URL.format(path=path, item=channel_id)
+        self.log('getElementsFromChannel, url="%s"' % url)
 
-        response = self.getJsonDataFromUrl(urlToLoad, params=params)
+        response = self.getJsonDataFromUrl(url, params=params)
         for element_data in response or []:
+            self.log('getElementsFromChannel, yield "%s/%s"' % (
+                element_data['title'], element_data['show_id']))
             yield {
                 'label': element_data['title'],
                 'params': {
                     'mode': 'item',
                     'item_id': element_data['show_id']
                 },
-                'arts': {
-                    'icon': element_data['thumbnail'],
-                    'thumb': element_data['thumbnail'],
-                },
+                'arts': self.createArt(element_data['thumbnail']),
             }
 
     def getSeasonsForItem(self, item_id, season_id=None):
@@ -219,6 +246,7 @@ class Vvvvid:
             yield from self.getEpisodesForSeason(item_id, season_id)
         else:
             url = VVVVID_SEASONS_URL.format(item=item_id)
+            self.log('getSeasonsForItem, url="%s"' % url)
             response = self.getJsonDataFromUrl(url)
 
             # if only one element load it directly
@@ -227,6 +255,8 @@ class Vvvvid:
                     item_id, response[0].get('season_id'))
             else:
                 for season_data in response:
+                    self.log('getSeasonsForItem, yield "%s/%s/%s"' % (
+                        season_data.get('name'), item_id, season_data.get('season_id')))
                     yield {
                         'label': season_data.get('name'),
                         'params': {
@@ -237,8 +267,8 @@ class Vvvvid:
                     }
 
     def getEpisodesForSeason(self, item_id, season_id):
-        # web_pdb.set_trace()
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
+        self.log('getEpisodesForSeason, url="%s"' % url)
         response = self.getJsonDataFromUrl(url)
 
         for episode_data in response:
@@ -250,7 +280,7 @@ class Vvvvid:
                         ).replace('/manifest.f4m', '/master.m3u8')
                 else:
                     addonutils.notify(episode_data['video_type'])
-                    addonutils.log(episode_data['video_type'], 3)
+                    self.log(episode_data['video_type'], 3)
                 yield {
                     'label': episode_data['number'] + ' - ' + episode_data['title'],
                     'params': {
@@ -265,9 +295,7 @@ class Vvvvid:
                         'duration': episode_data['length'],
                         'mediatype': 'episode',
                     },
-                    'arts': {
-                        'thumbnail': episode_data['thumbnail'],
-                    },
+                    'arts': self.createArt(episode_data['thumbnail']),
                     'isPlayable': episode_data['playable'],
                 }
 
@@ -275,7 +303,7 @@ class Vvvvid:
         data_storage = addonutils.Storage()
         params.update({'conn_id': data_storage.get('conn_id')})
         headers = {
-            'User-Agent': HTTP_HEADERS,
+            'User-Agent': USER_AGENT,
             'Cookie': data_storage.get('cookie'),
         }
         response = requests.get(url, params=params, headers=headers)
