@@ -38,7 +38,8 @@ def main():
         )
         addItems(items)
     elif mode == 'item':
-        items = vvvvid.getSeasonsForItem(params.get('item_id'), params.get('season_id'))
+        items = vvvvid.getSeasonsForItem(
+            params.get('item_id'), params.get('season_id'))
         addItems(items)
     elif mode == 'play':
         addonutils.setResolvedUrl(url=params.get('video'), exit=False)

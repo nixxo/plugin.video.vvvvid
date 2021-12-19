@@ -2,7 +2,7 @@ import re
 import requests
 
 from resources.lib import addonutils
-import web_pdb
+from resources.lib.translate import translatedString as T
 
 
 VVVVID_BASE_URL = 'https://www.vvvvid.it/vvvvid/ondemand/'
@@ -40,19 +40,9 @@ VVVVID_TYPE = 'video/vvvvid'
 
 DEVMODE = addonutils.getSettingAsBool('dev_mode')
 
-T_MAP = {
-    'menu.anime': 33001,
-    'menu.movies': 33002,
-    'menu.shows': 33003,
-    'menu.series': 33004,
-    'input.email': 40001,
-    'input.password': 40002,
-    'no.credentials': 40003,
-    'login.error': 40004,
-}
-
 # INFO SERIE
 # https://www.vvvvid.it/vvvvid/ondemand/1420/info/
+
 
 class Vvvvid:
     def __init__(self):
@@ -71,8 +61,7 @@ class Vvvvid:
             credentials = self.getCredentials()
             if not credentials:
                 self.log('__init__, no credentials provided.', 2)
-                addonutils.showOkDialog(
-                    line=addonutils.LANGUAGE(T_MAP['no.credentials']))
+                addonutils.showOkDialog(line=T('no.credentials'))
                 addonutils.endScript()
 
             post_data = {
@@ -90,8 +79,7 @@ class Vvvvid:
             data = response.json()
             if data['result'] != 'first' and data['result'] != 'ok':
                 self.log('__init__, login failed,', 3)
-                addonutils.showOkDialog(
-                    line=addonutils.LANGUAGE(T_MAP['login.error']))
+                addonutils.showOkDialog(line=T('login.error'))
                 addonutils.endScript()
             self.log('__init__, login successfull,', 1)
             data_storage.set('conn_id', data['data']['conn_id'])
@@ -111,7 +99,7 @@ class Vvvvid:
         username = addonutils.getSetting('username')
         if not username:
             self.log('getCredentials, requesting username.')
-            username = xbmcgui.Dialog().input(addonutils.LANGUAGE(T_MAP['input.email']))
+            username = xbmcgui.Dialog().input(T('input.email'))
             self.log('getCredentials, saving username.')
             addonutils.setSetting('username', username)
 
@@ -119,7 +107,7 @@ class Vvvvid:
         if not password:
             self.log('getCredentials, requesting password.')
             password = xbmcgui.Dialog().input(
-                addonutils.LANGUAGE(T_MAP['input.password']),
+                T('input.password'),
                 option=xbmcgui.ALPHANUM_HIDE_INPUT)
             if addonutils.getSettingAsBool('save_password'):
                 self.log('getCredentials, saving password.')
@@ -138,28 +126,28 @@ class Vvvvid:
     def getMainMenu(self):
         return [
             {
-                'label': addonutils.LANGUAGE(T_MAP['menu.anime']),
+                'label': T('menu.anime'),
                 'params': {
                     'mode': 'channels',
                     'type': MODE_ANIME,
                 },
             },
             {
-                'label': addonutils.LANGUAGE(T_MAP['menu.movies']),
+                'label': T('menu.movies'),
                 'params': {
                     'mode': 'channels',
                     'type': MODE_MOVIES,
                 },
             },
             {
-                'label': addonutils.LANGUAGE(T_MAP['menu.shows']),
+                'label': T('menu.shows'),
                 'params': {
                     'mode': 'channels',
                     'type': MODE_SHOWS,
                 },
             },
             {
-                'label': addonutils.LANGUAGE(T_MAP['menu.series']),
+                'label': T('menu.series'),
                 'params': {
                     'mode': 'channels',
                     'type': MODE_SERIES,
