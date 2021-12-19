@@ -1,21 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.vvvvid" version="0.0.1" name="VVVVID" provider-name="evilsephiroth, nixxo">
+<addon id="plugin.video.vvvvid" version="0.0.2" name="VVVVID" provider-name="nixxo">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" />
-        <import addon="script.module.routing" version="0.2.3"/>
         <import addon="script.module.web-pdb" version="1.5.6" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary>VVVVID</summary>
-        <description>Plugin to view vvvvid.it content.</description>
+        <summary lang="en_GB">VVVVID</summary>
+        <summary lang="it_IT">VVVVID</summary>
+        <description lang="en_GB">Addon to view vvvvid.it content.</description>
+        <description lang="it_IT">Addon per vedere i contenduti del sito vvvvid.it.</description>
         <disclaimer>The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
-        <source>https://github.com/nixxo</source>
-		<website>https://github.com/nixxo</website>
         <platform>all</platform>
+        <source>https://github.com/nixxo/plugin.video.vvvvid</source>
+		<website>https://www.vvvvid.it</website>
+        <news>[b]v0.0.2[/b]
+- rewritten the plugin almost from scratch
+- kodi19+ compatible
+- removed routing
+- improved settings
+- improved playback
+- added translations support
+
+[b]v0.0.1[/b]
+- initial release from evilsephiroth code</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.png</fanart>
