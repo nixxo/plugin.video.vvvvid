@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 import os
-import pickle
 import sys
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
@@ -48,13 +46,13 @@ def getParams():
     return dict(parse_qsl(sys.argv[2][1:]))
 
 
-def parameters(p):
+def parameters(p, host=sys.argv[0]):
     for k, v in list(p.items()):
         if v:
             p[k] = v
         else:
             p.pop(k, None)
-    return sys.argv[0] + '?' + urlencode(p)
+    return host + '?' + urlencode(p)
 
 
 def getSetting(setting):
@@ -88,13 +86,9 @@ def showOkDialog(line, heading=NAME):
 
 def createListItem(
         label='', params=None, label2=None,
-        thumb=None, fanart=None, poster=None, arts=None,
-        videoInfo=None, properties=None, isFolder=True,
+        thumb=None, fanart=None, poster=None, arts={},
+        videoInfo=None, properties={}, isFolder=True,
         path=None, subs=None):
-    if arts is None:
-        arts = {}
-    if properties is None:
-        properties = {}
     item = xbmcgui.ListItem(label, label2, path)
     if thumb:
         arts['thumb'] = thumb
@@ -115,8 +109,8 @@ def createListItem(
 
 def addListItem(
         label='', params=None, label2=None,
-        thumb=None, fanart=None, poster=None, arts=None,
-        videoInfo=None, properties=None, isFolder=True,
+        thumb=None, fanart=None, poster=None, arts={},
+        videoInfo=None, properties={}, isFolder=True,
         path=None, subs=None):
     if isinstance(params, dict):
         url = parameters(params)
@@ -132,23 +126,17 @@ def addListItem(
 
 
 def setResolvedUrl(
-        url='', solved=True, subs=None, headers=None,
-        ins=None, insdata=None, item=None, exit=True):
+        url='', solved=True, headers=None, subs=None,
+        item=None, exit=True):
     headerUrl = ''
     if headers:
         headerUrl = urlencode(headers)
     item = xbmcgui.ListItem(path=url + '|' + headerUrl) if item is None else item
     if subs is not None:
         item.setSubtitles(subs)
-    if ins:
-        item.setProperty('inputstreamaddon', ins)
-        item.setProperty('inputstream', ins)
-        if insdata:
-            for key, value in list(insdata.items()):
-                item.setProperty(ins + '.' + key, value)
     xbmcplugin.setResolvedUrl(HANDLE, solved, item)
     if exit:
-        sys.exit()
+        sys.exit(0)
 
 
 def setContent(ctype='videos'):
@@ -161,26 +149,7 @@ def endScript(message=None, loglevel=2, closedir=True, exit=True):
     if closedir:
         xbmcplugin.endOfDirectory(handle=HANDLE, succeeded=True)
     if exit:
-        sys.exit()
-
-
-class Storage:
-    FILENAME = os.path.join(DATA_PATH_T, 'storage.pkl')
-
-    def __init__(self):
-        if os.path.exists(Storage.FILENAME):
-            self.data = pickle.load(open(Storage.FILENAME, "rb"))
-            if not self.data:
-                self.data = {}
-        else:
-            self.data = {}
-
-    def get(self, id):
-        return self.data.get(id)
-
-    def set(self, id, value):
-        self.data[id] = value
-        pickle.dump(self.data, open(Storage.FILENAME, "wb"))
+        sys.exit(0)
 
 
 log('Starting with command "%s"' % sys.argv[2], 1)

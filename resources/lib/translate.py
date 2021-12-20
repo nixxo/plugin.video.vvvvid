@@ -1,7 +1,6 @@
 from resources.lib.addonutils import LANGUAGE
 from resources.lib.addonutils import log
 
-
 T_MAP = {
     'menu.anime': 33001,
     'menu.movies': 33002,

@@ -34,7 +34,7 @@ def main():
             params.get('type'),
             params.get('filter_id'),
             params.get('category_id'),
-            params.get('extras_id')
+            params.get('extras_id'),
         )
         addItems(items)
     elif mode == 'item':

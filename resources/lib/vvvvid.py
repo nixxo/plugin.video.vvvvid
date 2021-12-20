@@ -1,5 +1,8 @@
+import datetime
 import re
 import requests
+
+from simplecache import SimpleCache
 
 from resources.lib import addonutils
 from resources.lib.translate import translatedString as T
@@ -46,12 +49,12 @@ DEVMODE = addonutils.getSettingAsBool('dev_mode')
 
 class Vvvvid:
     def __init__(self):
-        data_storage = addonutils.Storage()
-        cookie = data_storage.get('cookie')
+        self.cache = SimpleCache()
 
-        headers = {'User-Agent': USER_AGENT}
-        if cookie:
-            headers.update({'Cookie': cookie})
+        headers = {
+            'User-Agent': USER_AGENT,
+            'Cookie': self.cache.get('%s.cookie' % addonutils.ID),
+        }
 
         response = requests.get(VVVVID_LOGIN_URL, headers=headers)
 
@@ -82,11 +85,11 @@ class Vvvvid:
                 addonutils.showOkDialog(line=T('login.error'))
                 addonutils.endScript()
             self.log('__init__, login successfull,', 1)
-            data_storage.set('conn_id', data['data']['conn_id'])
-            data_storage.set('cookie', response.headers['set-cookie'])
+            self.cache.set('%s.conn_id' % addonutils.ID, data['data']['conn_id'])
+            self.cache.set('%s.cookie' % addonutils.ID, response.headers['set-cookie'])
         else:
             self.log('__init__, logged in.')
-            data_storage.set('conn_id', data['data']['conn_id'])
+            self.cache.set('%s.conn_id' % addonutils.ID, data['data']['conn_id'])
 
     def log(self, msg, level=0):
         if DEVMODE:
@@ -288,18 +291,31 @@ class Vvvvid:
                 }
 
     def getJsonDataFromUrl(self, url, params={}):
-        data_storage = addonutils.Storage()
-        params.update({'conn_id': data_storage.get('conn_id')})
+        data = self.cache.get(
+            '%s.getJsonDataFromUrl, url = %s' % (
+                addonutils.ID, addonutils.parameters(params, url)))
+        if data:
+            return data
+
+        params.update({'conn_id': self.cache.get('%s.conn_id' % addonutils.ID)})
         headers = {
             'User-Agent': USER_AGENT,
-            'Cookie': data_storage.get('cookie'),
+            'Cookie': self.cache.get('%s.cookie' % addonutils.ID),
         }
         response = requests.get(url, params=params, headers=headers)
-        response = response.json()
-        if response.get('result') == 'ok':
-            return response.get('data')
-        return None
-
+        if response.status_code == requests.codes.ok:
+            response.encoding = 'utf-8'
+            response = response.json()
+            if response.get('result') == 'ok':
+                self.cache.set(
+                    '%s.getJsonDataFromUrl, url = %s' % (
+                        addonutils.ID, addonutils.parameters(params, url)),
+                    response.get('data'),
+                    expiration=datetime.timedelta(hours=2))
+                return self.getJsonDataFromUrl(url, params)
+            return None
+        else:
+            response.raise_for_status()
 
 def f(m):
     l = []
