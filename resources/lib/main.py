@@ -42,7 +42,15 @@ def main():
             params.get('item_id'), params.get('season_id'))
         addItems(items)
     elif mode == 'play':
-        addonutils.setResolvedUrl(url=params.get('video'), exit=False)
+        item = vvvvid.getVideo(
+            params.get('item_id'), params.get('season_id'), params.get('video_id'))
+
+        item = addonutils.createListItem(
+            label=item.get('label'), path=item.get('url'),
+            videoInfo=item.get('videoInfo'),
+            arts=item.get('arts'), isFolder=False)
+
+        addonutils.setResolvedUrl(item=item, exit=False)
     else:
         # main menu
         items = vvvvid.getMainMenu()

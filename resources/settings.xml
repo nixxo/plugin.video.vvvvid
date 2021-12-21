@@ -14,8 +14,8 @@
                     </control>
                 </setting>
                 <setting id="save_password" type="boolean" label="31003" help="41003">
-                    <level>0</level>
-                    <default>false</default>
+                    <level>4</level>
+                    <default>true</default>
                     <control type="toggle" />
                 </setting>
                 <setting id="password" type="string" label="31004" help="41004">

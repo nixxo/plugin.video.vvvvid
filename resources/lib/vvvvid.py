@@ -6,6 +6,7 @@ from simplecache import SimpleCache
 
 from resources.lib import addonutils
 from resources.lib.translate import translatedString as T
+import web_pdb
 
 
 VVVVID_BASE_URL = 'https://www.vvvvid.it/vvvvid/ondemand/'
@@ -13,6 +14,7 @@ VVVVID_LOGIN_URL = 'http://www.vvvvid.it/user/login'
 VVVVID_SEASONS_URL = VVVVID_BASE_URL + '{item}/seasons'
 VVVVID_SEASON_URL = VVVVID_BASE_URL + '{item}/season/{season}'
 VVVVID_ELEMENTS_URL = VVVVID_BASE_URL + '{path}{item}/last/'
+VVVVID_INFO_URL = VVVVID_BASE_URL + '{item}/info/'
 ANIME_CHANNELS_PATH = 'anime/channels'
 MOVIE_CHANNELS_PATH = 'film/channels'
 SHOW_CHANNELS_PATH = 'show/channels'
@@ -42,9 +44,6 @@ ENC_TYPE = 'video/enc'
 VVVVID_TYPE = 'video/vvvvid'
 
 DEVMODE = addonutils.getSettingAsBool('dev_mode')
-
-# INFO SERIE
-# https://www.vvvvid.it/vvvvid/ondemand/1420/info/
 
 
 class Vvvvid:
@@ -198,6 +197,9 @@ class Vvvvid:
                 sub = sub[0] if sub else None
                 self.log('getChannelsSection, yield "%s/%s/%s/%s"' % (
                     channel_data['name'], mode_type, channel_data['id'], sub))
+                if channel_data['name'] == 'Extra':
+                    self.log('getChannelsSection, skipping "Extra" element', 1)
+                    continue
                 yield {
                     'label': channel_data['name'],
                     'params': {
@@ -210,6 +212,7 @@ class Vvvvid:
 
     def getElementsFromChannel(self, channel_id, type,
             filter_id=None, category_id=None, extras_id=None):
+        web_pdb.set_trace()
         path = self.getChannelsPath(type, single=True)
         params = {
             'filter': filter_id,
@@ -223,11 +226,24 @@ class Vvvvid:
         for element_data in response or []:
             self.log('getElementsFromChannel, yield "%s/%s"' % (
                 element_data['title'], element_data['show_id']))
+            url = VVVVID_INFO_URL.format(item=element_data['show_id'])
+            web_pdb.set_trace()
+            data = self.getJsonDataFromUrl(url)
+            # data.get('show_type')
+            # 6 show tv
+            # 5 anime
+            # 4 tv series
+            # 3 film
             yield {
                 'label': element_data['title'],
                 'params': {
                     'mode': 'item',
                     'item_id': element_data['show_id']
+                },
+                'videoInfos': {
+                    'tvshowtitle': data.get('title'),
+                    'plot': data.get('description'),
+                    'year': data.get('date_published'),
                 },
                 'arts': self.createArt(element_data['thumbnail']),
             }
@@ -261,22 +277,15 @@ class Vvvvid:
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
         self.log('getEpisodesForSeason, url="%s"' % url)
         response = self.getJsonDataFromUrl(url)
-
         for episode_data in response:
-            if(episode_data['video_id'] != '-1'):
-                embed_info = dec_ei(episode_data['embed_info'])
-                if episode_data['video_type'] == AKAMAI_TYPE:
-                    manifest = re.sub(
-                        r'https?(://[^/]+)/z/', r'https\1/i/', embed_info
-                        ).replace('/manifest.f4m', '/master.m3u8')
-                else:
-                    addonutils.notify(episode_data['video_type'])
-                    self.log(episode_data['video_type'], 3)
+            if episode_data['video_id'] != '-1':
                 yield {
                     'label': episode_data['number'] + ' - ' + episode_data['title'],
                     'params': {
                         'mode': 'play',
-                        'video': manifest,
+                        'item_id': item_id,
+                        'season_id': season_id,
+                        'video_id': episode_data['video_id'],
                     },
                     'videoInfo': {
                         'title': episode_data['title'],
@@ -284,11 +293,41 @@ class Vvvvid:
                         'season': int(episode_data['season_number']),
                         'episode': int(episode_data['number']),
                         'duration': episode_data['length'],
-                        'mediatype': 'episode',
+                        'mediatype': 'episode', # TODO movie
                     },
                     'arts': self.createArt(episode_data['thumbnail']),
                     'isPlayable': episode_data['playable'],
                 }
+
+    def getVideo(self, item_id, season_id, video_id):
+        url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
+        self.log('getVideo, url="%s" video_id="%s"' % (url, video_id))
+        response = self.getJsonDataFromUrl(url)
+
+        episode_data = [x for x in response if str(x.get('video_id')) == video_id][-1]
+        embed_info = dec_ei(episode_data['embed_info'])
+        if episode_data['video_type'] == AKAMAI_TYPE:
+            manifest = re.sub(
+                r'https?(://[^/]+)/z/', r'https\1/i/', embed_info
+                ).replace('/manifest.f4m', '/master.m3u8')
+            self.log('getVideo, manifest="%s"' % manifest, 1)
+        else:
+            addonutils.notify(episode_data['video_type'])
+            self.log(episode_data['video_type'], 3)
+        return {
+            'label': episode_data['number'] + ' - ' + episode_data['title'],
+            'url': manifest or embed_info,
+            'videoInfo': {
+                'title': episode_data['title'],
+                'tvshowtitle': episode_data['show_title'],
+                'season': int(episode_data['season_number']),
+                'episode': int(episode_data['number']),
+                'duration': episode_data['length'],
+                'mediatype': 'episode', # TODO movie
+            },
+            'arts': self.createArt(episode_data['thumbnail']),
+            'isPlayable': episode_data['playable'],
+        }
 
     def getJsonDataFromUrl(self, url, params={}):
         data = self.cache.get(
