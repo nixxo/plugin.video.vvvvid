@@ -43,8 +43,38 @@ KENC_TYPE = 'video/kenc'
 ENC_TYPE = 'video/enc'
 VVVVID_TYPE = 'video/vvvvid'
 
+# TODO: uri='plugin://plugin.video.youtube/play/?video_id='+video_id
+# xbmc.executebuiltin('RunPlugin(plugin://plugin.video.youtube/channel/UCaBf1a-dpIsw8OxqH4ki2Kg/?addon_id=plugin.video.example)')
+
 DEVMODE = addonutils.getSettingAsBool('dev_mode')
 
+MAIN_MENU = [
+{
+    'label': T('menu.anime'),
+    'params': {
+        'mode': 'channels',
+        'type': MODE_ANIME,
+    },
+}, {
+    'label': T('menu.movies'),
+    'params': {
+        'mode': 'channels',
+        'type': MODE_MOVIES,
+    },
+}, {
+    'label': T('menu.shows'),
+    'params': {
+        'mode': 'channels',
+        'type': MODE_SHOWS,
+    },
+}, {
+    'label': T('menu.series'),
+    'params': {
+        'mode': 'channels',
+        'type': MODE_SERIES,
+    },
+},
+]
 
 class Vvvvid:
     def __init__(self):
@@ -52,7 +82,7 @@ class Vvvvid:
 
         headers = {
             'User-Agent': USER_AGENT,
-            'Cookie': self.cache.get('%s.cookie' % addonutils.ID),
+            'Cookie': self.cache.get(f"{addonutils.ID}.cookie"),
         }
 
         response = requests.get(VVVVID_LOGIN_URL, headers=headers)
@@ -84,11 +114,11 @@ class Vvvvid:
                 addonutils.showOkDialog(line=T('login.error'))
                 addonutils.endScript()
             self.log('__init__, login successfull,', 1)
-            self.cache.set('%s.conn_id' % addonutils.ID, data['data']['conn_id'])
-            self.cache.set('%s.cookie' % addonutils.ID, response.headers['set-cookie'])
+            self.cache.set(f"{addonutils.ID}.conn_id", data['data']['conn_id'])
+            self.cache.set(f"{addonutils.ID}.cookie", response.headers['set-cookie'])
         else:
             self.log('__init__, logged in.')
-            self.cache.set('%s.conn_id' % addonutils.ID, data['data']['conn_id'])
+            self.cache.set(f"{addonutils.ID}.conn_id", data['data']['conn_id'])
 
     def log(self, msg, level=0):
         if DEVMODE:
@@ -120,42 +150,15 @@ class Vvvvid:
 
         return {'username': username, 'password': password}
 
-    def createArt(self, thumb):
-        return {
-            'thumb': thumb + '|User-Agent=' + USER_AGENT_UE
-        }
+    def createArt(self, thumb, **kwargs):
+        arts = {'thumb': f"{thumb}|User-Agent={USER_AGENT_UE}"}
+        for k in kwargs:
+            if kwargs[k]:
+                arts[k] = f"{kwargs[k]}|User-Agent={USER_AGENT_UE}"
+        return arts
 
     def getMainMenu(self):
-        return [
-            {
-                'label': T('menu.anime'),
-                'params': {
-                    'mode': 'channels',
-                    'type': MODE_ANIME,
-                },
-            },
-            {
-                'label': T('menu.movies'),
-                'params': {
-                    'mode': 'channels',
-                    'type': MODE_MOVIES,
-                },
-            },
-            {
-                'label': T('menu.shows'),
-                'params': {
-                    'mode': 'channels',
-                    'type': MODE_SHOWS,
-                },
-            },
-            {
-                'label': T('menu.series'),
-                'params': {
-                    'mode': 'channels',
-                    'type': MODE_SERIES,
-                },
-            },
-        ]
+        return MAIN_MENU
 
     def getChannelsPath(self, type, single=False):
         if type == MODE_MOVIES:
@@ -169,34 +172,34 @@ class Vvvvid:
 
     def getChannelsSection(self, mode_type, submode=None, channel_id=None):
         url = VVVVID_BASE_URL + self.getChannelsPath(mode_type)
-        self.log('getChannelsSection, url="%s"' % url)
+        self.log(f"getChannelsSection, url = {url}")
         response = self.getJsonDataFromUrl(url)
         for channel_data in response or []:
             if submode and channel_id:
                 if str(channel_data['id']) == channel_id:
                     if submode in channel_data:
                         for data in channel_data[submode]:
-                            label, id = (data, data) if isinstance(data, str) else (data.get('name'), data.get('id'))
-                            self.log('getChannelsSection, yield "%s/%s/%s/%s/%s"' % (
-                                label, mode_type, channel_id, submode, id))
+                            label, id = (data, data) if isinstance(
+                                data, str) else (data.get('name'), data.get('id'))
+                            self.log(f"getChannelsSection, yield \"{label}/{mode_type}/{channel_id}/{submode}/{id}\"")
                             yield {
                                 'label': label,
                                 'params': {
                                     'mode': 'single',
                                     'type': mode_type,
                                     'channel_id': channel_id,
-                                    '%s_id' % submode: id,
+                                    f"{submode}_id": id,
                                 },
                             }
             elif channel_id:
-                self.log('getChannelsSection, getting elements for "%s"' % channel_id, 1)
+                self.log(f"getChannelsSection, getting elements for {channel_id}", 1)
                 yield from self.getElementsFromChannel(channel_id, mode_type)
                 break
             else:
-                sub = [x for x in ['filter', 'category', 'extras'] if x in channel_data]
+                sub = [x for x in ['filter', 'category',
+                                   'extras'] if x in channel_data]
                 sub = sub[0] if sub else None
-                self.log('getChannelsSection, yield "%s/%s/%s/%s"' % (
-                    channel_data['name'], mode_type, channel_data['id'], sub))
+                self.log(f"getChannelsSection, yield \"{channel_data['name']}/{mode_type}/{channel_data['id']}/{sub}\"")
                 if channel_data['name'] == 'Extra':
                     self.log('getChannelsSection, skipping "Extra" element', 1)
                     continue
@@ -212,7 +215,7 @@ class Vvvvid:
 
     def getElementsFromChannel(self, channel_id, type,
             filter_id=None, category_id=None, extras_id=None):
-        web_pdb.set_trace()
+        # web_pdb.set_trace()
         path = self.getChannelsPath(type, single=True)
         params = {
             'filter': filter_id,
@@ -227,7 +230,7 @@ class Vvvvid:
             self.log('getElementsFromChannel, yield "%s/%s"' % (
                 element_data['title'], element_data['show_id']))
             url = VVVVID_INFO_URL.format(item=element_data['show_id'])
-            web_pdb.set_trace()
+            # web_pdb.set_trace()
             data = self.getJsonDataFromUrl(url)
             # data.get('show_type')
             # 6 show tv
@@ -244,8 +247,10 @@ class Vvvvid:
                     'tvshowtitle': data.get('title'),
                     'plot': data.get('description'),
                     'year': data.get('date_published'),
+                    'mediatype': 'tvshow',
                 },
-                'arts': self.createArt(element_data['thumbnail']),
+                'arts': self.createArt(
+                    thumb=element_data['thumbnail'])
             }
 
     def getSeasonsForItem(self, item_id, season_id=None):
@@ -277,9 +282,10 @@ class Vvvvid:
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
         self.log('getEpisodesForSeason, url="%s"' % url)
         response = self.getJsonDataFromUrl(url)
+        # web_pdb.set_trace()
         for episode_data in response:
             if episode_data['video_id'] != '-1':
-                yield {
+                info = {
                     'label': episode_data['number'] + ' - ' + episode_data['title'],
                     'params': {
                         'mode': 'play',
@@ -289,27 +295,38 @@ class Vvvvid:
                     },
                     'videoInfo': {
                         'title': episode_data['title'],
-                        'tvshowtitle': episode_data['show_title'],
-                        'season': int(episode_data['season_number']),
-                        'episode': int(episode_data['number']),
                         'duration': episode_data['length'],
-                        'mediatype': 'episode', # TODO movie
                     },
                     'arts': self.createArt(episode_data['thumbnail']),
                     'isPlayable': episode_data['playable'],
                 }
+                if episode_data.get('show_type') == 3:
+                    # Movie
+                    info['videoInfo'].update({
+                        'mediatype': 'movie',
+                    })
+                elif episode_data.get('show_type') in [4, 5, 6]:
+                    # episode of a series, anime, show
+                    info['videoInfo'].update({
+                        'tvshowtitle': episode_data['show_title'],
+                        'season': int(episode_data['season_number']),
+                        'episode': int(episode_data['number']),
+                        'mediatype': 'episode',
+                    })
+                yield info
 
     def getVideo(self, item_id, season_id, video_id):
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
         self.log('getVideo, url="%s" video_id="%s"' % (url, video_id))
         response = self.getJsonDataFromUrl(url)
 
-        episode_data = [x for x in response if str(x.get('video_id')) == video_id][-1]
+        episode_data = [x for x in response if str(
+            x.get('video_id')) == video_id][-1]
         embed_info = dec_ei(episode_data['embed_info'])
         if episode_data['video_type'] == AKAMAI_TYPE:
             manifest = re.sub(
                 r'https?(://[^/]+)/z/', r'https\1/i/', embed_info
-                ).replace('/manifest.f4m', '/master.m3u8')
+            ).replace('/manifest.f4m', '/master.m3u8')
             self.log('getVideo, manifest="%s"' % manifest, 1)
         else:
             addonutils.notify(episode_data['video_type'])
@@ -323,7 +340,7 @@ class Vvvvid:
                 'season': int(episode_data['season_number']),
                 'episode': int(episode_data['number']),
                 'duration': episode_data['length'],
-                'mediatype': 'episode', # TODO movie
+                'mediatype': 'episode',  # TODO movie
             },
             'arts': self.createArt(episode_data['thumbnail']),
             'isPlayable': episode_data['playable'],
@@ -336,7 +353,8 @@ class Vvvvid:
         if data:
             return data
 
-        params.update({'conn_id': self.cache.get('%s.conn_id' % addonutils.ID)})
+        params.update({'conn_id': self.cache.get(
+            '%s.conn_id' % addonutils.ID)})
         headers = {
             'User-Agent': USER_AGENT,
             'Cookie': self.cache.get('%s.cookie' % addonutils.ID),
@@ -355,6 +373,7 @@ class Vvvvid:
             return None
         else:
             response.raise_for_status()
+
 
 def f(m):
     l = []

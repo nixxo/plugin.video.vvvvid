@@ -36,8 +36,7 @@ def notify(msg):
 
 def log(msg, level=xbmc.LOGDEBUG):
     # DEBUG = 0, INFO = 1, WARNING = 2, ERROR = 3, FATAL = 4
-    msg = '[%s/%s] %s' % (ID, VERSION, msg)
-    xbmc.log(msg, level=level)
+    xbmc.log(f"[{ID}/{VERSION}] {msg}", level=level)
 
 
 def getParams():
@@ -52,7 +51,7 @@ def parameters(p, host=sys.argv[0]):
             p[k] = v
         else:
             p.pop(k, None)
-    return host + '?' + urlencode(p)
+    return f"{host}?{urlencode(p)}"
 
 
 def getSetting(setting):
@@ -131,7 +130,8 @@ def setResolvedUrl(
     headerUrl = ''
     if headers:
         headerUrl = urlencode(headers)
-    item = xbmcgui.ListItem(path=url + '|' + headerUrl) if item is None else item
+    item = xbmcgui.ListItem(
+        path=f"{url}|{headerUrl}") if item is None else item
     if subs is not None:
         item.setSubtitles(subs)
     xbmcplugin.setResolvedUrl(HANDLE, solved, item)
@@ -152,4 +152,4 @@ def endScript(message=None, loglevel=2, closedir=True, exit=True):
         sys.exit(0)
 
 
-log('Starting with command "%s"' % sys.argv[2], 1)
+log(f"Starting with command \"{sys.argv[2]}\"", 1)

@@ -1,5 +1,6 @@
 from resources.lib import addonutils
 from resources.lib.vvvvid import Vvvvid
+import web_pdb
 
 
 def addItems(items):
@@ -18,7 +19,7 @@ def addItems(items):
 def main():
     vvvvid = Vvvvid()
     params = addonutils.getParams()
-    vvvvid.log('main, Params = %s' % str(params), 1)
+    vvvvid.log(f"main, Params = {params}", 1)
     mode = params.get('mode')
     if mode == 'channels':
         items = vvvvid.getChannelsSection(
