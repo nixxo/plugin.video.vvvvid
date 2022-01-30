@@ -1,10 +1,13 @@
 from resources.lib import addonutils
 from resources.lib.vvvvid import Vvvvid
-import web_pdb
+# import web_pdb
 
 
 def addItems(items):
+    folder_type = []
     for item in items:
+        if item.get('videoInfo'):
+            folder_type.append(item['videoInfo'].get('mediatype'))
         addonutils.addListItem(
             label=item.get('label'),
             label2=item.get('label2'),
@@ -14,6 +17,9 @@ def addItems(items):
             arts=item.get('arts'),
             isFolder=False if item.get('isPlayable') else True,
         )
+    folder_type = list(dict.fromkeys(folder_type))
+    if len(folder_type) == 1:
+        addonutils.setContent(f"{folder_type[0]}s")
 
 
 def main():

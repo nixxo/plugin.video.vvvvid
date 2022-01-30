@@ -49,32 +49,33 @@ VVVVID_TYPE = 'video/vvvvid'
 DEVMODE = addonutils.getSettingAsBool('dev_mode')
 
 MAIN_MENU = [
-{
-    'label': T('menu.anime'),
-    'params': {
-        'mode': 'channels',
-        'type': MODE_ANIME,
+    {
+        'label': T('menu.anime'),
+        'params': {
+            'mode': 'channels',
+            'type': MODE_ANIME,
+        },
+    }, {
+        'label': T('menu.movies'),
+        'params': {
+            'mode': 'channels',
+            'type': MODE_MOVIES,
+        },
+    }, {
+        'label': T('menu.shows'),
+        'params': {
+            'mode': 'channels',
+            'type': MODE_SHOWS,
+        },
+    }, {
+        'label': T('menu.series'),
+        'params': {
+            'mode': 'channels',
+            'type': MODE_SERIES,
+        },
     },
-}, {
-    'label': T('menu.movies'),
-    'params': {
-        'mode': 'channels',
-        'type': MODE_MOVIES,
-    },
-}, {
-    'label': T('menu.shows'),
-    'params': {
-        'mode': 'channels',
-        'type': MODE_SHOWS,
-    },
-}, {
-    'label': T('menu.series'),
-    'params': {
-        'mode': 'channels',
-        'type': MODE_SERIES,
-    },
-},
 ]
+
 
 class Vvvvid:
     def __init__(self):
@@ -115,7 +116,8 @@ class Vvvvid:
                 addonutils.endScript()
             self.log('__init__, login successfull,', 1)
             self.cache.set(f"{addonutils.ID}.conn_id", data['data']['conn_id'])
-            self.cache.set(f"{addonutils.ID}.cookie", response.headers['set-cookie'])
+            self.cache.set(f"{addonutils.ID}.cookie",
+                           response.headers['set-cookie'])
         else:
             self.log('__init__, logged in.')
             self.cache.set(f"{addonutils.ID}.conn_id", data['data']['conn_id'])
@@ -181,7 +183,8 @@ class Vvvvid:
                         for data in channel_data[submode]:
                             label, id = (data, data) if isinstance(
                                 data, str) else (data.get('name'), data.get('id'))
-                            self.log(f"getChannelsSection, yield \"{label}/{mode_type}/{channel_id}/{submode}/{id}\"")
+                            self.log(
+                                f"getChannelsSection, yield \"{label}/{mode_type}/{channel_id}/{submode}/{id}\"")
                             yield {
                                 'label': label,
                                 'params': {
@@ -192,14 +195,16 @@ class Vvvvid:
                                 },
                             }
             elif channel_id:
-                self.log(f"getChannelsSection, getting elements for {channel_id}", 1)
+                self.log(
+                    f"getChannelsSection, getting elements for {channel_id}", 1)
                 yield from self.getElementsFromChannel(channel_id, mode_type)
                 break
             else:
                 sub = [x for x in ['filter', 'category',
                                    'extras'] if x in channel_data]
                 sub = sub[0] if sub else None
-                self.log(f"getChannelsSection, yield \"{channel_data['name']}/{mode_type}/{channel_data['id']}/{sub}\"")
+                self.log(
+                    f"getChannelsSection, yield \"{channel_data['name']}/{mode_type}/{channel_data['id']}/{sub}\"")
                 if channel_data['name'] == 'Extra':
                     self.log('getChannelsSection, skipping "Extra" element', 1)
                     continue
@@ -214,7 +219,7 @@ class Vvvvid:
                 }
 
     def getElementsFromChannel(self, channel_id, type,
-            filter_id=None, category_id=None, extras_id=None):
+                               filter_id=None, category_id=None, extras_id=None):
         # web_pdb.set_trace()
         path = self.getChannelsPath(type, single=True)
         params = {
@@ -223,42 +228,42 @@ class Vvvvid:
             'extras': extras_id
         }
         url = VVVVID_ELEMENTS_URL.format(path=path, item=channel_id)
-        self.log('getElementsFromChannel, url="%s"' % url)
+        self.log(f"getElementsFromChannel, url={url}")
 
         response = self.getJsonDataFromUrl(url, params=params)
         for element_data in response or []:
-            self.log('getElementsFromChannel, yield "%s/%s"' % (
-                element_data['title'], element_data['show_id']))
+            self.log(
+                f"getElementsFromChannel, yield \"{element_data['title']}/{element_data['show_id']}\"")
             url = VVVVID_INFO_URL.format(item=element_data['show_id'])
             # web_pdb.set_trace()
             data = self.getJsonDataFromUrl(url)
-            # data.get('show_type')
-            # 6 show tv
-            # 5 anime
-            # 4 tv series
-            # 3 film
-            yield {
+            info = {
                 'label': element_data['title'],
                 'params': {
                     'mode': 'item',
                     'item_id': element_data['show_id']
                 },
-                'videoInfos': {
+                'videoInfo': {
                     'tvshowtitle': data.get('title'),
                     'plot': data.get('description'),
                     'year': data.get('date_published'),
-                    'mediatype': 'tvshow',
                 },
                 'arts': self.createArt(
                     thumb=element_data['thumbnail'])
             }
+            if type == MODE_MOVIES or data.get('show_type') == 3:
+                info['videoInfo'].update({'mediatype': 'movie'})
+            elif data.get('show_type') in [4, 5, 6]:
+                info['videoInfo'].update({'mediatype': 'tvshow'})
+
+            yield info
 
     def getSeasonsForItem(self, item_id, season_id=None):
         if season_id:
             yield from self.getEpisodesForSeason(item_id, season_id)
         else:
             url = VVVVID_SEASONS_URL.format(item=item_id)
-            self.log('getSeasonsForItem, url="%s"' % url)
+            self.log(f"getSeasonsForItem, url = {url}")
             response = self.getJsonDataFromUrl(url)
 
             # if only one element load it directly
@@ -267,8 +272,8 @@ class Vvvvid:
                     item_id, response[0].get('season_id'))
             else:
                 for season_data in response:
-                    self.log('getSeasonsForItem, yield "%s/%s/%s"' % (
-                        season_data.get('name'), item_id, season_data.get('season_id')))
+                    self.log(
+                        f"getSeasonsForItem, yield \"{season_data.get('name')}/{item_id}/{season_data.get('season_id')}\"")
                     yield {
                         'label': season_data.get('name'),
                         'params': {
@@ -278,46 +283,51 @@ class Vvvvid:
                         }
                     }
 
+    def setVideoInfo(self, item, data):
+        item.update({
+            'videoInfo': {
+                'title': data['title'],
+                'duration': data['length'],
+            },
+            'arts': self.createArt(data['thumbnail']),
+            'isPlayable': data['playable'],
+        })
+        if data.get('show_type') == 3:
+            # Movie
+            item.update({'label': data['title']})
+            item['videoInfo'].update({
+                'mediatype': 'movie',
+            })
+        elif data.get('show_type') in [4, 5, 6]:
+            # episode of a series, anime, show
+            item.update({'label': f"{data['number']} - {data['title']}"})
+            item['videoInfo'].update({
+                'tvshowtitle': data['show_title'],
+                'season': int(data['season_number']),
+                'episode': int(data['number']),
+                'mediatype': 'episode',
+            })
+
     def getEpisodesForSeason(self, item_id, season_id):
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
-        self.log('getEpisodesForSeason, url="%s"' % url)
+        self.log(f"getEpisodesForSeason, url = {url}")
         response = self.getJsonDataFromUrl(url)
-        # web_pdb.set_trace()
         for episode_data in response:
             if episode_data['video_id'] != '-1':
                 info = {
-                    'label': episode_data['number'] + ' - ' + episode_data['title'],
                     'params': {
                         'mode': 'play',
                         'item_id': item_id,
                         'season_id': season_id,
                         'video_id': episode_data['video_id'],
                     },
-                    'videoInfo': {
-                        'title': episode_data['title'],
-                        'duration': episode_data['length'],
-                    },
-                    'arts': self.createArt(episode_data['thumbnail']),
-                    'isPlayable': episode_data['playable'],
                 }
-                if episode_data.get('show_type') == 3:
-                    # Movie
-                    info['videoInfo'].update({
-                        'mediatype': 'movie',
-                    })
-                elif episode_data.get('show_type') in [4, 5, 6]:
-                    # episode of a series, anime, show
-                    info['videoInfo'].update({
-                        'tvshowtitle': episode_data['show_title'],
-                        'season': int(episode_data['season_number']),
-                        'episode': int(episode_data['number']),
-                        'mediatype': 'episode',
-                    })
+                self.setVideoInfo(info, episode_data)
                 yield info
 
     def getVideo(self, item_id, season_id, video_id):
         url = VVVVID_SEASON_URL.format(item=item_id, season=season_id)
-        self.log('getVideo, url="%s" video_id="%s"' % (url, video_id))
+        self.log(f"getVideo, url = {url}, video_id = {video_id}")
         response = self.getJsonDataFromUrl(url)
 
         episode_data = [x for x in response if str(
@@ -327,37 +337,26 @@ class Vvvvid:
             manifest = re.sub(
                 r'https?(://[^/]+)/z/', r'https\1/i/', embed_info
             ).replace('/manifest.f4m', '/master.m3u8')
-            self.log('getVideo, manifest="%s"' % manifest, 1)
+            self.log(f"getVideo, manifest= {manifest}", 1)
         else:
             addonutils.notify(episode_data['video_type'])
             self.log(episode_data['video_type'], 3)
-        return {
-            'label': episode_data['number'] + ' - ' + episode_data['title'],
+        info = {
             'url': manifest or embed_info,
-            'videoInfo': {
-                'title': episode_data['title'],
-                'tvshowtitle': episode_data['show_title'],
-                'season': int(episode_data['season_number']),
-                'episode': int(episode_data['number']),
-                'duration': episode_data['length'],
-                'mediatype': 'episode',  # TODO movie
-            },
-            'arts': self.createArt(episode_data['thumbnail']),
-            'isPlayable': episode_data['playable'],
         }
+        self.setVideoInfo(info, episode_data)
+        return info
 
     def getJsonDataFromUrl(self, url, params={}):
         data = self.cache.get(
-            '%s.getJsonDataFromUrl, url = %s' % (
-                addonutils.ID, addonutils.parameters(params, url)))
+            f"{addonutils.ID}.getJsonDataFromUrl, url = {addonutils.parameters(params, url)}")
         if data:
             return data
 
-        params.update({'conn_id': self.cache.get(
-            '%s.conn_id' % addonutils.ID)})
+        params.update({'conn_id': self.cache.get(f"{addonutils.ID}.conn_id")})
         headers = {
             'User-Agent': USER_AGENT,
-            'Cookie': self.cache.get('%s.cookie' % addonutils.ID),
+            'Cookie': self.cache.get(f"{addonutils.ID}.cookie"),
         }
         response = requests.get(url, params=params, headers=headers)
         if response.status_code == requests.codes.ok:
@@ -365,8 +364,7 @@ class Vvvvid:
             response = response.json()
             if response.get('result') == 'ok':
                 self.cache.set(
-                    '%s.getJsonDataFromUrl, url = %s' % (
-                        addonutils.ID, addonutils.parameters(params, url)),
+                    f"{addonutils.ID}.getJsonDataFromUrl, url = {addonutils.parameters(params, url)}",
                     response.get('data'),
                     expiration=datetime.timedelta(hours=2))
                 return self.getJsonDataFromUrl(url, params)
